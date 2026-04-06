@@ -1,9 +1,6 @@
-"""
-Telegram Bot Kurulum ve Çalıştırma Scripti
-"""
-
 import os
 import sys
+from telegram_bot import run_bot
 
 
 def check_dependencies():
@@ -21,51 +18,21 @@ def check_dependencies():
         return False
 
 
-def check_env_file():
-    """Environment dosyasını kontrol eder"""
-    if not os.path.exists(".env"):
-        if os.path.exists(".env.example"):
-            print("⚠️ .env dosyası bulunamadı, .env.example kopyalanıyor...")
-            with open(".env.example", "r") as src:
-                with open(".env", "w") as dst:
-                    dst.write(src.read())
-            print("✅ .env dosyası oluşturuldu")
-            print("📝 Lütfen .env dosyasını düzenleyip TELEGRAM_BOT_TOKEN'ı ayarlayın")
-            return False
-        else:
-            print("⚠️ .env.example bulunamadı")
-            return False
-
-    # Token kontrolü
-    from dotenv import load_dotenv
-    load_dotenv()
-
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token or token == "your_bot_token_here":
-        print("❌ TELEGRAM_BOT_TOKEN ayarlanmamış!")
-        print("📝 Lütfen .env dosyasını düzenleyin:")
-        print("   TELEGRAM_BOT_TOKEN=123456789:ABCdefGHI...")
-        return False
-
-    return True
-
-
 def main():
-    """Ana kurulum kontrolü"""
-    print("🔧 Telegram Bot Kurulum Kontrolü\n")
+    """Ana başlatma"""
+    print("🚀 Bot başlatılıyor...\n")
 
     if not check_dependencies():
         sys.exit(1)
 
-    if not check_env_file():
+    # Railway environment variable direkt alınır
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    if not token:
+        print("❌ TELEGRAM_BOT_TOKEN bulunamadı!")
         sys.exit(1)
 
-    print("\n🚀 Bot başlatılıyor...")
-    from telegram_bot import run_bot
-    from dotenv import load_dotenv
-
-    load_dotenv()
-    run_bot(os.getenv("TELEGRAM_BOT_TOKEN"))
+    run_bot(token)
 
 
 if __name__ == "__main__":
