@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{{ symbol }} PRO</title>
+
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
+<style>
+body { background:#0f172a; color:white; font-family:Arial; padding:20px; }
+.card { background:#1e293b; padding:20px; margin-bottom:15px; border-radius:10px; }
+
+#chart { height:400px; }
+#rsi { height:150px; }
+#macd { height:150px; }
+
+.al { color:#22c55e; }
+.sat { color:#ef4444; }
+.tut { color:#eab308; }
+</style>
+
+</head>
+
+<body>
+
+<h1>📊 {{ symbol }} PRO ANALİZ</h1>
+
+<div class="card">
+💰 {{ data.price }} |
+📈 {{ data.trend }} |
+🤖 <span class="{{ data.ml|lower }}">{{ data.ml }}</span> |
+📊 Skor: {{ data.score }}
+</div>
+
+<div class="card">
+🎯 {{ data.target }} |
+🛑 {{ data.stop }}
+</div>
+
+<div class="card"><div id="chart"></div></div>
+<div class="card"><div id="rsi"></div></div>
+<div class="card"><div id="macd"></div></div>
+
+<script>
+
+// PYTHON VERİ
+const ohlc = {{ ohlc | safe }};
+const prices = {{ prices | safe }};
+
+// 📈 MUM GRAFİK
+const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+    layout:{background:{color:'#0f172a'}, textColor:'white'}
+});
+
+const candles = chart.addCandlestickSeries();
+candles.setData(ohlc);
+
+// 📉 RSI
+function calcRSI(p, period=14){
+    let out=[]
+    for(let i=period;i<p.length;i++){
+        let g=0,l=0
+        for(let j=i-period;j<i;j++){
+            let d=p[j+1]-p[j]
+            if(d>0) g+=d; else l-=d
+        }
+        let rs=g/(l+1e-6)
+        out.push({time:ohlc[i].time,value:100-(100/(1+rs))})
+    }
+    return out
+}
+
+const rsiChart = LightweightCharts.createChart(document.getElementById('rsi'), {
+    layout:{background:{color:'#0f172a'}, textColor:'white'}
+});
+
+const rsiLine = rsiChart.addLineSeries({color:'#eab308'});
+rsiLine.setData(calcRSI(prices));
+
+// 📊 MACD
+function ema(data, period){
+    let k=2/(period+1)
+    let emaArr=[data[0]]
+    for(let i=1;i<data.length;i++){
+        emaArr.push(data[i]*k + emaArr[i-1]*(1-k))
+    }
+    return emaArr
+}
+
+function calcMACD(p){
+    let ema12=ema(p,12)
+    let ema26=ema(p,26)
+
+    let macd=[]
+    for(let i=0;i<p.length;i++){
+        macd.push(ema12[i]-ema26[i])
+    }
+
+    let signal=ema(macd,9)
+
+    let out=[]
+    for(let i=0;i<p.length;i++){
+        out.push({
+            time:ohlc[i].time,
+            value:macd[i]
+        })
+    }
+    return out
+}
+
+const macdChart = LightweightCharts.createChart(document.getElementById('macd'), {
+    layout:{background:{color:'#0f172a'}, textColor:'white'}
+});
+
+const macdLine = macdChart.addLineSeries({color:'#38bdf8'});
+macdLine.setData(calcMACD(prices));
+
+</script>
+
+</body>
+</html>
