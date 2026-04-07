@@ -1,49 +1,55 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+
 from scanner import scan_stocks
-from data_fetcher import get_stock_data
-from backtest import run_backtest
+from symbols import BIST_ALL
 
-WATCHLIST = ["THYAO", "GARAN", "ASELS", "KCHOL", "TUPRS"]
-
+# -------------------
+# START
+# -------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🤖 Bot aktif!")
+    await update.message.reply_text(
+        "🤖 Bot aktif!\n\n"
+        "/scan → hisse tarama"
+    )
 
+# -------------------
+# SCAN
+# -------------------
 async def scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📡 Tarama yapılıyor...")
+    await update.message.reply_text("📡 Tarama başlıyor...")
 
-    results = scan_stocks(WATCHLIST)
+    try:
+        results = scan_stocks(BIST_ALL)
 
-    if not results:
-        await update.message.reply_text("Sinyal yok ❌")
-        return
+        if not results:
+            await update.message.reply_text("Sinyal yok ❌")
+            return
 
-    for r in results:
-        msg = (
-            f"🚀 {r['symbol']}\n"
-            f"💰 {r['price']}\n"
-            f"🎯 {r['target']}\n"
-            f"🛑 {r['stop']}"
-        )
+        msg = "🚀 SİNYALLER:\n\n"
 
-        await update.message.reply_photo(
-            photo=open(r["chart"], "rb"),
-            caption=msg
-        )
+        for r in results:
+            msg += (
+                f"{r['symbol']}\n"
+                f"Fiyat: {r['price']}\n"
+                f"Hedef: {r['target']}\n"
+                f"Stop: {r['stop']}\n"
+                f"Skor: {r['score']}\n\n"
+            )
 
-async def backtest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    symbol = context.args[0]
-    data = get_stock_data(symbol)
+        await update.message.reply_text(msg)
 
-    result = run_backtest(data)
+    except Exception as e:
+        await update.message.reply_text(f"Hata: {str(e)}")
 
-    await update.message.reply_text(str(result))
-
+# -------------------
+# RUN
+# -------------------
 def run_bot(token):
     app = Application.builder().token(token).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("scan", scan))
-    app.add_handler(CommandHandler("backtest", backtest_cmd))
 
+    print("🚀 Bot çalışıyor...")
     app.run_polling()
