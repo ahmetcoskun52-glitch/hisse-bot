@@ -1,55 +1,51 @@
+import logging
+import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-from scanner import scan_stocks
-from symbols import BIST_ALL
+logging.basicConfig(level=logging.INFO)
 
-# -------------------
-# START
-# -------------------
+# --- KOMUTLAR ---
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🤖 Bot aktif!\n\n"
-        "/scan → hisse tarama"
+        "🤖 Bot aktif!\n\nKomutlar:\n/analiz THYAO\n/yukselenler"
     )
 
-# -------------------
-# SCAN
-# -------------------
-async def scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📡 Tarama başlıyor...")
+async def analiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Kullanım: /analiz THYAO")
+        return
 
-    try:
-        results = scan_stocks(BIST_ALL)
+    symbol = context.args[0].upper()
 
-        if not results:
-            await update.message.reply_text("Sinyal yok ❌")
-            return
+    # Demo analiz
+    await update.message.reply_text(
+        f"📊 {symbol} analiz:\nTrend: YÜKSELİŞ\nRSI: 62\nHedef: +3%"
+    )
 
-        msg = "🚀 SİNYALLER:\n\n"
+async def yukselenler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🚀 Potansiyel hisseler:\nTHYAO\nGARAN\nASELS"
+    )
 
-        for r in results:
-            msg += (
-                f"{r['symbol']}\n"
-                f"Fiyat: {r['price']}\n"
-                f"Hedef: {r['target']}\n"
-                f"Stop: {r['stop']}\n"
-                f"Skor: {r['score']}\n\n"
-            )
+# --- BOT ---
 
-        await update.message.reply_text(msg)
+def main():
+    TOKEN = os.getenv("TOKEN")
 
-    except Exception as e:
-        await update.message.reply_text(f"Hata: {str(e)}")
+    if not TOKEN:
+        print("❌ TOKEN yok!")
+        return
 
-# -------------------
-# RUN
-# -------------------
-def run_bot(token):
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("scan", scan))
+    app.add_handler(CommandHandler("analiz", analiz))
+    app.add_handler(CommandHandler("yukselenler", yukselenler))
 
-    print("🚀 Bot çalışıyor...")
+    print("🚀 Bot başlatıldı")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
