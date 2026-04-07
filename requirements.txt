@@ -1,6 +1,0 @@
-python-telegram-bot==20.7
-python-dotenv
-numpy# Telegram Trading Bot Bağımlılıkları
-python-telegram-bot>=20.0
-python-dotenv>=1.0.0
-numpy>=1.21.0
